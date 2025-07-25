@@ -78,7 +78,7 @@
       "name": "Anthropic Chat Model",
       "credentials": {
         "anthropicApi": {
-          "id": "mrFkZ8Dy5jHppThF",
+          "id": "your anthropic key",
           "name": "Anthropic account"
         }
       }
@@ -156,7 +156,7 @@
           "parameters": [
             {
               "name": "Authorization",
-              "value": "Klaviyo-API-Key pk_d2e99a75f6cd65e45620507f2269834fc0"
+              "value": "Klaviyo-API-Key your klavyio key"
             },
             {
               "name": "revision",
@@ -318,7 +318,7 @@
           "parameters": [
             {
               "name": "Authorization",
-              "value": "Klaviyo-API-Key pk_990c515eb812da43df192434be9f242400"
+              "value": "Klaviyo-API-Key your klavyio key"
             },
             {
               "name": "revision",
@@ -349,7 +349,7 @@
           "parameters": [
             {
               "name": "Authorization",
-              "value": "Klaviyo-API-Key pk_d2e99a75f6cd65e45620507f2269834fc0"
+              "value": "Klaviyo-API-Key your klavyio key"
             },
             {
               "name": "revision",
@@ -380,7 +380,7 @@
           "parameters": [
             {
               "name": "Authorization",
-              "value": "Klaviyo-API-Key pk_d2e99a75f6cd65e45620507f2269834fc0"
+              "value": "Klaviyo-API-Key your klavyio key"
             },
             {
               "name": "revision",

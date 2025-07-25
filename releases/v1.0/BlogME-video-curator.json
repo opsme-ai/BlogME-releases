@@ -33,7 +33,7 @@
       "name": "Claude Video Analyzer",
       "credentials": {
         "anthropicApi": {
-          "id": "mrFkZ8Dy5jHppThF",
+          "id": "your anthropic key",
           "name": "Anthropic account"
         }
       }
