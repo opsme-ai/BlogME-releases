@@ -1,0 +1,1231 @@
+{
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -2680,
+        -40
+      ],
+      "id": "cc0df8e2-e4f8-45af-9768-d59b41d1e8c2",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "advanced": true,
+        "mergeByFields": {
+          "values": [
+            {
+              "field1": "VideoID",
+              "field2": "id"
+            }
+          ]
+        },
+        "joinMode": "keepNonMatches",
+        "outputDataFrom": "input2",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -260,
+        -40
+      ],
+      "id": "6341025a-44bc-4428-9dce-ba7a1ec6deda",
+      "name": "Merge with Existing Data",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "content": "# OpsME - BlogME YouTube RSS Ingestion Flow\n## Documentation\n\nThis workflow automatically discovers and ingests YouTube videos from RSS feeds with duplicate prevention.\n\n## Setup Requirements\n- **Airtable Credentials**: Personal Access Token configured in n8n\n- **YouTube API Key**: Google Cloud Console API key (AIzaSyDBczcAOTVTEAg5b9sL1CIqAmhBDGfW10Y)\n- **Airtable Base** with two tables:\n  - **Sources Table**: Contains YouTube channel URLs\n  - **Videos Table**: Stores discovered videos\n  - **Once created modify the Airtable nodes with the new values**\n- **Schedule**: Daily execution at 9 AM\n\n## Main Workflow Stages\n\n### Stage 1: Retrieve & Process Sources\n- **Fetch Sources**: Gets active YouTube channels from Airtable Sources table\n- **Route by Type**: Filters for 'youtube channel' source types only\n- **Extract Channel IDs**: Validates URLs and extracts channel identifiers (@username, /channel/, /c/ formats)\n- **Get Channel API Data**: Uses YouTube Data API v3 to resolve channel IDs\n- **Update Sources**: Saves resolved channel IDs back to Airtable\n\n### Stage 2: Get YouTube Videos from RSS\n- **Loop Processing**: Processes each channel individually\n- **RSS Reader**: Fetches videos from `youtube.com/feeds/videos.xml?channel_id=CHANNEL_ID`\n- **Set ChannelID var**: Stores channel ID for later use in merge operations\n- **Fetch Existing Videos**: Gets current VideoIDs from database for duplicate check\n- **Merge Operations**: Two-stage merge process for data flow and duplicate prevention\n\n### Stage 3: Insert New Videos\n- **Filter New Videos**: Only processes videos not already in database (by VideoID)\n- **Insert to Database**: Creates new video records with:\n  - VideoID (YouTube video ID)\n  - Video Title, Full URL, Channel Name\n  - Publication Date, Stage ('New')\n  - ChannelID (using .first() method for merge compatibility)\n- **Loop Continuation**: Returns to process next channel\n\n## Workflow Details\n- **Trigger**: Manual trigger + Daily schedule (9 AM)\n- **Duplicate Prevention**: Uses VideoID matching with merge operation\n- **Data Flow**: Uses .first() method for accessing previous node data after merge operations\n- **Error Handling**: Validates YouTube URLs and continues on insert errors\n- **Processing**: Sequential channel processing to avoid API rate limits\n- **Output**: New videos tagged as 'Stage: New' for downstream processing",
+        "height": 1200,
+        "width": 960
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -3820,
+        -360
+      ],
+      "id": "065dc5ba-95ec-47e0-b4c8-4b96498afc74",
+      "name": "README1"
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "appogY65dUw2zNOJB",
+          "mode": "id"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblIrDp48qlFm0817",
+          "mode": "name"
+        },
+        "filterByFormula": "({Active}='1')",
+        "options": {}
+      },
+      "id": "a042641c-8adc-4139-b4ff-adbb4abb477e",
+      "name": "Fetch Sources from Airtable",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
+      "position": [
+        -2460,
+        80
+      ],
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "add your api token",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      },
+      "id": "3a9845f6-2374-426f-8c12-98d716f895c5",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -2680,
+        160
+      ],
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process sources from Airtable and route to appropriate handlers\nconst sources = $input.all();\nconst outputs = {\n  rss: [],\n  youtube: [],\n  podcast: [],\n  blog: []\n};\n\nfor (const item of sources) {\n  const source = item.json;\n  const sourceType = source['Source Type']?.toLowerCase() || 'unknown';\n  const url = source['Website URL'] || '';\n  \n  if (!url) continue;\n  \n  const processedSource = {\n    id: source.id,\n    name: source['Source Name'] || 'Unknown',\n    url: url,\n    type: sourceType,\n    category: source['Primary Focus'] || 'General',\n    active: source['Active Status'] !== false\n  };\n  \n  if (!processedSource.active) continue;\n  \n  // Route based on source type\n  if (sourceType.includes('blog') || sourceType.includes('rss')) {\n    outputs.rss.push({ json: processedSource });\n  } else if (sourceType.includes('youtube')) {\n    outputs.youtube.push({ json: processedSource });\n  } else if (sourceType.includes('podcast')) {\n    outputs.podcast.push({ json: processedSource });\n  } else {\n    // Default to RSS for unknown types\n    outputs.rss.push({ json: processedSource });\n  }\n}\n\nreturn [\n  ...outputs.rss, ...outputs.youtube, ...outputs.podcast, ...outputs.blog\n];"
+      },
+      "id": "c9413199-44b9-4785-aba1-7999ff7af15a",
+      "name": "Route Sources by Type",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2240,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.type }}",
+                    "rightValue": "blog",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "030d7e1e-657b-49d6-8e7d-680bfac2e495"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "02615ffe-9276-453a-8dca-dad0e51ef0aa",
+                    "leftValue": "={{ $json.type }}",
+                    "rightValue": "youtube channel",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -2020,
+        80
+      ],
+      "id": "8b1323ed-b83d-4e1d-8296-718b5fb330c0",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "08a19239-170b-4611-9e61-69ef0b783c44",
+              "leftValue": "={{ $json.isValid }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        -1560,
+        80
+      ],
+      "id": "3fb2539e-4129-4bea-9f55-1f76c5710dad",
+      "name": "Filter"
+    },
+    {
+      "parameters": {
+        "url": "https://www.googleapis.com/youtube/v3/search",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "part",
+              "value": "snippet"
+            },
+            {
+              "name": "q",
+              "value": "={{ $json.channelIdentifier }}"
+            },
+            {
+              "name": "type",
+              "value": "channel"
+            },
+            {
+              "name": "key",
+              "value": "AIzaSyDBczcAOTVTEAg5b9sL1CIqAmhBDGfW10Y"
+            },
+            {
+              "name": "maxResults",
+              "value": "1"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1340,
+        80
+      ],
+      "id": "1b15af26-3a6b-4b9c-9945-52103901c62b",
+      "name": "Get Channel_ID1"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -880,
+        80
+      ],
+      "id": "513f552e-c184-41a5-922b-06d916e5cf4f",
+      "name": "Loop Over Items1"
+    },
+    {
+      "parameters": {
+        "url": "=https://www.youtube.com/feeds/videos.xml?channel_id={{ $json.items[0].id.channelId }}",
+        "options": {}
+      },
+      "id": "a9faddde-79bc-4588-8e3a-1bfe17b1916e",
+      "name": "YouTube RSS Reader",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [
+        -440,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "value": "appogY65dUw2zNOJB",
+          "mode": "id"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblsgnMQzdOsBTGYM",
+          "mode": "id"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "VideoID": "={{ $json.id }}",
+            "Video Title": "={{ $json.title }}",
+            "Full Video URL": "={{ $json.link }}",
+            "Channel Name": "={{ $json.author }}",
+            "Stage": "New",
+            "Publication Date (Date Format)": "={{ $json.pubDate.toDateTime().format('MM/dd/yyyy') }}",
+            "ChannelID": "={{ $('Set ChannelID var').first().json.channelId }}"
+          },
+          "matchingColumns": [
+            "VideoID"
+          ],
+          "schema": [
+            {
+              "id": "VideoID",
+              "displayName": "VideoID",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Video Title",
+              "displayName": "Video Title",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Publication Date (Date Format)",
+              "displayName": "Publication Date (Date Format)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Stage",
+              "displayName": "Stage",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "New",
+                  "value": "New"
+                },
+                {
+                  "name": "Transcript generated",
+                  "value": "Transcript generated"
+                },
+                {
+                  "name": "Scored",
+                  "value": "Scored"
+                },
+                {
+                  "name": "Used in NewsLetter",
+                  "value": "Used in NewsLetter"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Channel Name",
+              "displayName": "Channel Name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "ChannelID",
+              "displayName": "ChannelID",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Full Video URL",
+              "displayName": "Full Video URL",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Description",
+              "displayName": "Description",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Transcript",
+              "displayName": "Transcript",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Main Ideas",
+              "displayName": "Main Ideas",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Content Summary",
+              "displayName": "Content Summary",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "VideoScore",
+              "displayName": "VideoScore",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Score Breakdown",
+              "displayName": "Score Breakdown",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Score Reasoning",
+              "displayName": "Score Reasoning",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Keywords",
+              "displayName": "Keywords",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Source",
+              "displayName": "Source",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Thumbnail Image",
+              "displayName": "Thumbnail Image",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Subscriber Feedback",
+              "displayName": "Subscriber Feedback",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Days Since Publication",
+              "displayName": "Days Since Publication",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Source Relevance Score",
+              "displayName": "Source Relevance Score",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Newsletters",
+              "displayName": "Newsletters",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "831995a6-81d1-4149-98aa-dc64ed887843",
+      "name": "Insert Videos in DB1",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
+      "position": [
+        340,
+        -100
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "add your api token",
+          "name": "Airtable Personal Access Token account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract channel identifiers from YouTube URLs and validate\nconst items = [];\n\nfor (const item of $input.all()) {\n  const source = item.json;\n  const url = source.url;\n  \n  // Simple URL validation - check if it contains youtube.com or malformed domains\n  const isValidDomain = url.includes('youtube.com') && \n                       !url.includes('youtubec') && \n                       !url.includes('youtube6') && \n                       !url.includes('youtube3');\n  \n  if (!isValidDomain) {\n    // Invalid URL - mark for error handling - output as STRING\n    items.push({\n      json: {\n        ...source,\n        isValid: 'false',\n        error: 'Invalid YouTube URL',\n        errorDetails: `URL '${url}' is not a valid YouTube URL. Expected format: https://www.youtube.com/...`\n      }\n    });\n    continue;\n  }\n  \n  let channelIdentifier = '';\n  let identifierType = '';\n  \n  if (url.includes('/@')) {\n    // Handle @username format: https://www.youtube.com/@ChannelName\n    channelIdentifier = url.split('/@')[1].split('/')[0];\n    identifierType = 'username';\n  } else if (url.includes('/channel/')) {\n    // Handle channel ID format: https://www.youtube.com/channel/UCxxxxxx\n    channelIdentifier = url.split('/channel/')[1].split('/')[0];\n    identifierType = 'channel_id';\n  } else if (url.includes('/c/')) {\n    // Handle custom URL format: https://www.youtube.com/c/ChannelName\n    channelIdentifier = url.split('/c/')[1].split('/')[0];\n    identifierType = 'custom_url';\n  } else {\n    // Fallback: try to extract any identifier\n    const parts = url.split('/').filter(part => part && part !== 'videos');\n    const lastPart = parts[parts.length - 1];\n    if (lastPart.startsWith('@')) {\n      channelIdentifier = lastPart.substring(1);\n      identifierType = 'username';\n    } else {\n      channelIdentifier = lastPart;\n      identifierType = 'unknown';\n    }\n  }\n  \n  // Additional validation: check if we extracted a valid identifier\n  if (!channelIdentifier || channelIdentifier.trim() === '') {\n    items.push({\n      json: {\n        ...source,\n        isValid: 'false',\n        error: 'Unable to extract channel identifier',\n        errorDetails: `Could not extract channel identifier from URL '${url}'. Please check the URL format.`\n      }\n    });\n    continue;\n  }\n  \n  // Valid URL - output as STRING\n  items.push({\n    json: {\n      ...source,\n      isValid: 'true',\n      channelIdentifier: channelIdentifier,\n      identifierType: identifierType,\n      originalUrl: url\n    }\n  });\n}\n\nreturn items;"
+      },
+      "id": "c6af8102-0c63-4a78-8d53-22db828a3baf",
+      "name": "Extract Channel Identifiers",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1780,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "a18de29b-7513-4d4f-a3f8-dacffcc46570",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "4cd2228f-4f04-4a3f-a068-303ab11b9786",
+              "leftValue": "={{ $json.link }}",
+              "rightValue": "https://www.youtube.com/watch",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        120,
+        0
+      ],
+      "id": "d7e155b9-f750-4c7b-8dd1-e2bf85ef1ec9",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "content": "## Retrieve Sources\n",
+        "height": 540,
+        "width": 1000,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -2840,
+        -180
+      ],
+      "id": "8fda2c65-fca8-4bb6-b9f0-ae13ea2bea21",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "## Get Channel ID\n",
+        "height": 540,
+        "width": 840,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1820,
+        -180
+      ],
+      "id": "13dffddc-44b4-4a4f-9b9e-19984bc77093",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "value": "appogY65dUw2zNOJB",
+          "mode": "list",
+          "cachedResultName": "Aquisition Insider Input List",
+          "cachedResultUrl": "https://airtable.com/appogY65dUw2zNOJB"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblIrDp48qlFm0817",
+          "mode": "list",
+          "cachedResultName": "Sources",
+          "cachedResultUrl": "https://airtable.com/appogY65dUw2zNOJB/tblIrDp48qlFm0817"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $('Filter').item.json.id }}",
+            "Youtube Channel ID": "={{ $json.items[0].id.channelId }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "Source Name",
+              "displayName": "Source Name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Active",
+              "displayName": "Active",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Source Type",
+              "displayName": "Source Type",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "YouTube Channel",
+                  "value": "YouTube Channel"
+                },
+                {
+                  "name": "Blog",
+                  "value": "Blog"
+                },
+                {
+                  "name": "Podcast",
+                  "value": "Podcast"
+                }
+              ],
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Website URL",
+              "displayName": "Website URL",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Youtube Channel ID",
+              "displayName": "Youtube Channel ID",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Contact Email",
+              "displayName": "Contact Email",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Primary Focus",
+              "displayName": "Primary Focus",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Country",
+              "displayName": "Country",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Source Logo",
+              "displayName": "Source Logo",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Relevance Score",
+              "displayName": "Relevance Score",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Last Reviewed Date",
+              "displayName": "Last Reviewed Date",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Active Status",
+              "displayName": "Active Status",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "News Articles",
+              "displayName": "News Articles",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Total News Articles",
+              "displayName": "Total News Articles",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Last Article Date",
+              "displayName": "Last Article Date",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "YoutubeVideos",
+              "displayName": "YoutubeVideos",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        -1180,
+        -60
+      ],
+      "id": "8b789081-ef51-4c15-997f-8d387df2d243",
+      "name": "Update ChannelID",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "add your api token",
+          "name": "Airtable Personal Access Token account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Get youtube videos from RSS Feed",
+        "height": 540,
+        "width": 1820,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -960,
+        -180
+      ],
+      "id": "934eacf1-6784-4c57-a3e7-58e6c0ab9b8a",
+      "name": "Sticky Note5"
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "appogY65dUw2zNOJB",
+          "mode": "id"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblsgnMQzdOsBTGYM",
+          "mode": "id"
+        },
+        "filterByFormula": "=( {ChannelID} = '{{ $json.items[0].id.channelId }}' )",
+        "options": {}
+      },
+      "id": "1c6880b8-0679-4610-b5c7-4d948e3fbb13",
+      "name": "Fetch Videos from same channel",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
+      "position": [
+        -520,
+        -100
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "add your api token",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        580,
+        160
+      ],
+      "id": "5651f742-1ad8-4f3f-a5bc-0192003732d5",
+      "name": "Merge",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1a2736f1-217c-4e56-843b-3d0957e62ca9",
+              "name": "channelId",
+              "value": "={{ $json.items[0].id.channelId }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -560,
+        200
+      ],
+      "id": "b598a2aa-3ef4-4762-a4f6-d36203e2b8e7",
+      "name": "Set ChannelID var"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -100,
+        40
+      ],
+      "id": "695f985c-652e-4741-bd94-29bc26004587",
+      "name": "Merge1"
+    }
+  ],
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Fetch Sources from Airtable",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge with Existing Data": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Sources from Airtable": {
+      "main": [
+        [
+          {
+            "node": "Route Sources by Type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch Sources from Airtable",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Sources by Type": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Extract Channel Identifiers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter": {
+      "main": [
+        [
+          {
+            "node": "Get Channel_ID1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Channel_ID1": {
+      "main": [
+        [
+          {
+            "node": "Update ChannelID",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items1": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Fetch Videos from same channel",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "YouTube RSS Reader",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Set ChannelID var",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "YouTube RSS Reader": {
+      "main": [
+        [
+          {
+            "node": "Merge with Existing Data",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Insert Videos in DB1": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Channel Identifiers": {
+      "main": [
+        [
+          {
+            "node": "Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Insert Videos in DB1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Fetch Videos from same channel": {
+      "main": [
+        [
+          {
+            "node": "Merge with Existing Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set ChannelID var": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "e471dfbd779209eba1f0067325677ed388a5cc6793267c6fa956fb49f8a46726"
+  }
+}

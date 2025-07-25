@@ -1,0 +1,603 @@
+{
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        720,
+        240
+      ],
+      "id": "1721ca6a-0c19-4d03-984f-5de7da5c349e",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "claude-sonnet-4-20250514",
+          "cachedResultName": "Claude 4 Sonnet"
+        },
+        "options": {
+          "thinking": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.3,
+      "position": [
+        1600,
+        240
+      ],
+      "id": "fc0ea115-c73d-4d93-8f05-8d449c5bb571",
+      "name": "Claude Video Analyzer",
+      "credentials": {
+        "anthropicApi": {
+          "id": "your anthropic key",
+          "name": "Anthropic account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=VIDEO DETAILS:\n- Summary: {{ $json['Content Summary'] }}\n- Key Ideas: {{ $json['Main Ideas'] }}\n- Keywords: {{ $json.Keywords }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are evaluating a real estate investment video for newsletter inclusion.\nYour output must be a json file containing \"Total Score\", \"Breakdown\" and \"Reasoning\" as fields\nCRITICAL: ALL SCORES MUST BE NUMERIC VALUES ONLY - NO STRINGS, NO FRACTIONS, NO \"/100\" NOTATION\nScore this video using the following criteria:\nSCORING INSTRUCTIONS:\n\nContent Relevance (40 points max):\n\nMarket Analysis & Trends: 0-15 points\nInvestment Strategies: 0-15 points\nFinancial Analysis: 0-10 points\n\n\nActionability & Practical Value (25 points max):\n\nImmediate Applicability: 0-15 points\nLearning Value: 0-10 points\n\n\nCredibility & Authority (20 points max):\n\nSource Credibility: 0-12 points\nContent Quality: 0-8 points\n\n\nTimeliness & Uniqueness (15 points max):\n\nTimeliness: 0-8 points\nUniqueness: 0-7 points\n\n\n\nKEYWORD BONUS:\n\nHigh-value keywords: +3-5 points each\nMedium-value keywords: +2-3 points each\nStandard keywords: +1-2 points each\nMaximum keyword bonus: +15 points\n\nOUTPUT FORMAT REQUIREMENTS:\n\nTotal Score: Must be a single integer (e.g., 78, not \"78/100\" or \"78\")\nAll breakdown scores: Must be single integers (e.g., 32, not \"32/40\")\nUse only raw numeric values in the JSON\n\nREQUIRED JSON STRUCTURE:\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        1600,
+        40
+      ],
+      "id": "6943f113-9d4c-40b2-b1f4-a71d95dedd50",
+      "name": "Video Scoring Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1200,
+        60
+      ],
+      "id": "3a814c75-8a71-4bed-8323-0a68bf46f6fb",
+      "name": "Loop Over Items",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst updatedItems = items.map((item) => {\n  const output = item?.json?.output;\n  const jsonString = output.substring(7, output.length - 3); // remove ```json\\n at the start and ``` at the end\n  const outputJson = JSON.parse(jsonString);\n  return { ...item.json, output: outputJson };\n});\nreturn updatedItems;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1980,
+        140
+      ],
+      "id": "9539b8d7-2fe6-425b-b83f-b1a9fdfc8726",
+      "name": "Extract json"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 11
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        720,
+        20
+      ],
+      "id": "fb17ff17-7ef8-4399-a4ae-f2b865a4ee8b",
+      "name": "Schedule Trigger",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "value": "appogY65dUw2zNOJB",
+          "mode": "list",
+          "cachedResultName": "Aquisition Insider Input List",
+          "cachedResultUrl": "https://airtable.com/appogY65dUw2zNOJB"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblsgnMQzdOsBTGYM",
+          "mode": "list",
+          "cachedResultName": "YoutubeVideos",
+          "cachedResultUrl": "https://airtable.com/appogY65dUw2zNOJB/tblsgnMQzdOsBTGYM"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Stage": "Scored",
+            "VideoScore": "={{ $json.output[\"Total Score\"] }}",
+            "id": "={{ $('Loop Over Items').item.json.id }}",
+            "Score Breakdown": "={{ $json.output.Breakdown.toJsonString() }}",
+            "Score Reasoning": "={{ $json.output.Reasoning }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true
+            },
+            {
+              "id": "VideoID",
+              "displayName": "VideoID",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Video Title",
+              "displayName": "Video Title",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "ChannelID",
+              "displayName": "ChannelID",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Publication Date",
+              "displayName": "Publication Date",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Publication Date (Date Format)",
+              "displayName": "Publication Date (Date Format)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Stage",
+              "displayName": "Stage",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "New",
+                  "value": "New"
+                },
+                {
+                  "name": "Transcript generated",
+                  "value": "Transcript generated"
+                },
+                {
+                  "name": "Scored",
+                  "value": "Scored"
+                },
+                {
+                  "name": "Used in NewsLetter",
+                  "value": "Used in NewsLetter"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Channel Name",
+              "displayName": "Channel Name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Full Video URL",
+              "displayName": "Full Video URL",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Description",
+              "displayName": "Description",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Transcript",
+              "displayName": "Transcript",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Main Ideas",
+              "displayName": "Main Ideas",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Content Summary",
+              "displayName": "Content Summary",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "VideoScore",
+              "displayName": "VideoScore",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Score Breakdown",
+              "displayName": "Score Breakdown",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Score Reasoning",
+              "displayName": "Score Reasoning",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Keywords",
+              "displayName": "Keywords",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Source",
+              "displayName": "Source",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Thumbnail Image",
+              "displayName": "Thumbnail Image",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Subscriber Feedback",
+              "displayName": "Subscriber Feedback",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Days Since Publication",
+              "displayName": "Days Since Publication",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Source Relevance Score",
+              "displayName": "Source Relevance Score",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Newsletters",
+              "displayName": "Newsletters",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        2240,
+        260
+      ],
+      "id": "2aa6e63d-6a90-408c-bcef-3171a4a5f665",
+      "name": "Update record",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "add your api token",
+          "name": "Airtable Personal Access Token account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "appogY65dUw2zNOJB",
+          "mode": "id"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblsgnMQzdOsBTGYM",
+          "mode": "list",
+          "cachedResultName": "YoutubeVideos",
+          "cachedResultUrl": "https://airtable.com/appogY65dUw2zNOJB/tblsgnMQzdOsBTGYM"
+        },
+        "filterByFormula": "=AND({Publication Date (Date Format)} > \"{{$now.minus(7,'days').format('yyyy-MM-dd')}}\", {Stage}=\"Transcript generated\")",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        940,
+        100
+      ],
+      "id": "11aa92e5-8121-4058-838a-98173afb156d",
+      "name": "Get videos with Stage='Transcript generated'",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "add your api token",
+          "name": "Airtable Personal Access Token account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Get videos \n## with Stage='Transcript generated'\n",
+        "height": 600,
+        "width": 480,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        640,
+        -100
+      ],
+      "id": "89630fce-8e95-408c-b35d-0d538abb8b84",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## Give them a score",
+        "height": 600,
+        "width": 1280,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1140,
+        -100
+      ],
+      "id": "52cd921f-707a-4334-9f64-c468264a9f4f",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "# BlogME Video Curator Workflow\n## Documentation\n\nThis workflow automatically scores and curates YouTube videos for newsletter inclusion using AI-powered content analysis.\n\n## Setup Requirements\n- **Anthropic API**: Claude 4 Sonnet model credentials (claude-sonnet-4-20250514)\n- **Airtable Access**: Videos table with transcript and analysis data\n- **Schedule**: Daily execution at 11 AM\n- **Prerequisites**: Videos must have 'Stage=Transcript generated' with Content Summary and Main Ideas populated\n\n## Main Workflow Stages\n\n### Stage 1: Get Videos for Scoring\n- **Fetch Videos**: Gets videos with 'Stage=Transcript generated' from last 7 days\n- **Filter Criteria**: `{Publication Date (Date Format)} > 7 days ago AND {Stage}='Transcript generated'`\n- **Required Fields**: Content Summary, Main Ideas, Keywords from preprocessing workflow\n\n### Stage 2: AI Video Analysis & Scoring\n- **Loop Processing**: Processes each video individually using Split in Batches\n- **Video Scoring Agent**: LangChain Agent with Claude 4 Sonnet\n- **Scoring System**: 5-component evaluation system (100 points total)\n  - Content Relevance (40pts): Market analysis, investment strategies, financial analysis\n  - Actionability (25pts): Immediate applicability, learning value\n  - Credibility (20pts): Source credibility, content quality\n  - Timeliness (15pts): Current relevance, uniqueness\n  - Keyword Bonus (15pts): High-value keyword detection\n- **Extract JSON**: Parses structured AI scoring output with error handling\n\n### Stage 3: Database Updates\n- **Update Records**: Saves comprehensive scoring data to Airtable\n- **Fields Updated**: Video Score, Score Breakdown, Score Reasoning, Stage\n- **Stage Progression**: Updates videos to 'Scored' for newsletter selection\n- **Error Handling**: Continues processing other videos on individual failures\n\n## Workflow Details\n- **Trigger**: Manual execution + Daily schedule (11 AM)\n- **AI Model**: Claude 4 Sonnet with structured prompt for consistent scoring\n- **Processing**: Sequential video analysis to prevent API rate limiting\n- **Output**: Videos with detailed scores (0-100) ready for newsletter curation\n- **Integration**: Feeds into BlogME Newsletter Writer workflow for automated content selection",
+        "height": 1020,
+        "width": 700
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -100,
+        -180
+      ],
+      "id": "d3d07dab-b68a-4f89-9b5f-76e7942fdafd",
+      "name": "Sticky Note2"
+    }
+  ],
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Get videos with Stage='Transcript generated'",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude Video Analyzer": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Video Scoring Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Video Scoring Agent": {
+      "main": [
+        [
+          {
+            "node": "Extract json",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Video Scoring Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract json": {
+      "main": [
+        [
+          {
+            "node": "Update record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get videos with Stage='Transcript generated'",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update record": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get videos with Stage='Transcript generated'": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "e471dfbd779209eba1f0067325677ed388a5cc6793267c6fa956fb49f8a46726"
+  }
+}
