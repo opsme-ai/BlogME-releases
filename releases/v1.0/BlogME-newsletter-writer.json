@@ -1,0 +1,934 @@
+{
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        1520,
+        460
+      ],
+      "id": "7c868161-168c-45a7-ad1c-84d44c4a2fd0",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "appogY65dUw2zNOJB",
+          "mode": "list",
+          "cachedResultName": "Aquisition Insider Input List",
+          "cachedResultUrl": "https://airtable.com/appogY65dUw2zNOJB"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblsgnMQzdOsBTGYM",
+          "mode": "list",
+          "cachedResultName": "YoutubeVideos",
+          "cachedResultUrl": "https://airtable.com/appogY65dUw2zNOJB/tblsgnMQzdOsBTGYM"
+        },
+        "filterByFormula": "=AND({Publication Date (Date Format)} > \"{{$now.minus(7,'days').format('yyyy-MM-dd')}}\", {Stage}=\"Scored\")",
+        "returnAll": false,
+        "limit": 5,
+        "options": {},
+        "sort": {
+          "property": [
+            {
+              "field": "VideoScore",
+              "direction": "desc"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        1740,
+        520
+      ],
+      "id": "9b12c7bb-079e-48c0-b936-93c3824f33a1",
+      "name": "Search records",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "add your api token",
+          "name": "Airtable Personal Access Token account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "claude-sonnet-4-20250514",
+          "mode": "list",
+          "cachedResultName": "Claude Sonnet 4"
+        },
+        "options": {
+          "thinking": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.3,
+      "position": [
+        2300,
+        740
+      ],
+      "id": "466fc456-7d0d-46ab-b198-2ebb0163a5c0",
+      "name": "Anthropic Chat Model",
+      "credentials": {
+        "anthropicApi": {
+          "id": "mrFkZ8Dy5jHppThF",
+          "name": "Anthropic account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldsToAggregate": {
+          "fieldToAggregate": [
+            {
+              "fieldToAggregate": "Video Title"
+            },
+            {
+              "fieldToAggregate": "Channel Name"
+            },
+            {
+              "fieldToAggregate": "Full Video URL"
+            },
+            {
+              "fieldToAggregate": "Main Ideas"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        1960,
+        520
+      ],
+      "id": "b67ab31b-f588-4c4b-abaa-2e094291aa0e",
+      "name": "Aggregate"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Transform the following newsletter:\n\n{{ $json.output }}",
+        "options": {
+          "systemMessage": "=You are tasked with creating a visually stunning, brand-compliant newsletter for LeadList.pro. Follow their exact branding guidelines and design aesthetic.\nBRAND IDENTITY & COLORS:\n\nPrimary Brand Colors: Deep navy blue (#1a365d), Clean white (#ffffff), Accent blue (#3182ce)\nSecondary Colors: Light gray (#f7fafc), Medium gray (#718096), Success green (#38a169)\nTypography: Clean, professional sans-serif fonts (Segoe UI, Arial, or similar)\nTone: Professional, trustworthy, data-driven, Massachusetts-focused\n\nDESIGN REQUIREMENTS:\nCreate a Klaviyo-compatible HTML newsletter with the following structure:\n\n<div style=\"font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 0; line-height: 1.6; color: #2d3748; background: #f7fafc;\">\n    \n    <!-- Header with LeadList.pro branding -->\n    <div style=\"background: linear-gradient(135deg, #1a365d 0%, #2c5282 100%); padding: 25px; text-align: center; border-bottom: 3px solid #3182ce;\">\n        <h1 style=\"margin: 0; font-size: 24px; font-weight: 700; color: white; letter-spacing: 1px;\">📊 LEADLIST WEEKLY</h1>\n        <p style=\"margin: 8px 0 0 0; font-size: 14px; color: #a0aec0; font-weight: 500;\">Massachusetts' Premier Probate & Preforeclosure Intelligence</p>\n    </div>\n\n    <!-- Subject & Pre-header section -->\n    <div style=\"background: white; padding: 20px; border-left: 4px solid #3182ce; margin: 0;\">\n        <div style=\"margin-bottom: 12px;\">\n            <span style=\"background: #1a365d; color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;\">SUBJECT</span>\n            <span style=\"margin-left: 10px; font-size: 15px; font-weight: 600; color: #1a365d;\">[SUBJECT LINE]</span>\n        </div>\n        <div>\n            <span style=\"background: #3182ce; color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;\">PRE-HEADER</span>\n            <span style=\"margin-left: 10px; font-size: 13px; color: #4a5568; font-style: italic;\">[PRE-HEADER TEXT]</span>\n        </div>\n    </div>\n\n    <!-- Quick Recap -->\n    <div style=\"background: white; padding: 20px; border-left: 4px solid #38a169; margin: 0;\">\n        <h3 style=\"margin: 0 0 10px 0; font-size: 16px; color: #1a365d; display: flex; align-items: center;\">\n            <span style=\"background: #38a169; color: white; padding: 6px 8px; border-radius: 50%; margin-right: 10px; font-size: 12px;\">📈</span>\n            Weekly Intelligence Brief\n        </h3>\n        <p style=\"margin: 0; font-size: 14px; color: #4a5568; line-height: 1.5;\">[QUICK RECAP TEXT]</p>\n    </div>\n\n    <!-- Video Content Cards -->\n    [FOR EACH VIDEO - Use these alternating card styles:]\n    \n    <!-- Style 1: Primary Blue Theme -->\n    <div style=\"background: white; margin: 1px 0; padding: 20px; border-left: 5px solid #1a365d; box-shadow: 0 2px 4px rgba(26,54,93,0.1);\">\n        <h4 style=\"margin: 0 0 12px 0; font-size: 15px; font-weight: 700; color: #1a365d; display: flex; align-items: center;\">\n            <span style=\"background: #1a365d; color: white; padding: 5px 8px; border-radius: 4px; margin-right: 10px; font-size: 11px; min-width: 45px; text-align: center;\">LEAD</span>\n            [CATCHPHRASE]\n        </h4>\n        <div style=\"color: #4a5568; font-size: 13px; line-height: 1.6; padding-left: 15px;\">\n            • [INSIGHT TEXT] → <a href=\"[VIDEO_URL]\" style=\"color: #3182ce; text-decoration: none; font-weight: 600; border-bottom: 1px solid #3182ce;\">watch</a>\n        </div>\n    </div>\n\n    <!-- Style 2: Accent Blue Theme -->\n    <div style=\"background: linear-gradient(135deg, #e6fffa 0%, #f0fff4 100%); margin: 1px 0; padding: 20px; border-left: 5px solid #3182ce; box-shadow: 0 2px 4px rgba(49,130,206,0.1);\">\n        <h4 style=\"margin: 0 0 12px 0; font-size: 15px; font-weight: 700; color: #1a365d; display: flex; align-items: center;\">\n            <span style=\"background: #3182ce; color: white; padding: 5px 8px; border-radius: 4px; margin-right: 10px; font-size: 11px; min-width: 45px; text-align: center;\">DATA</span>\n            [CATCHPHRASE]\n        </h4>\n        <div style=\"color: #2d3748; font-size: 13px; line-height: 1.6; padding-left: 15px;\">\n            • [INSIGHT TEXT] → <a href=\"[VIDEO_URL]\" style=\"color: #1a365d; text-decoration: none; font-weight: 600; border-bottom: 1px solid #1a365d;\">watch</a>\n        </div>\n    </div>\n\n    <!-- Style 3: Success Green Theme -->\n    <div style=\"background: white; margin: 1px 0; padding: 20px; border-left: 5px solid #38a169; box-shadow: 0 2px 4px rgba(56,161,105,0.1);\">\n        <h4 style=\"margin: 0 0 12px 0; font-size: 15px; font-weight: 700; color: #1a365d; display: flex; align-items: center;\">\n            <span style=\"background: #38a169; color: white; padding: 5px 8px; border-radius: 4px; margin-right: 10px; font-size: 11px; min-width: 45px; text-align: center;\">WIN</span>\n            [CATCHPHRASE]\n        </h4>\n        <div style=\"color: #4a5568; font-size: 13px; line-height: 1.6; padding-left: 15px;\">\n            • [INSIGHT TEXT] → <a href=\"[VIDEO_URL]\" style=\"color: #38a169; text-decoration: none; font-weight: 600; border-bottom: 1px solid #38a169;\">watch</a>\n        </div>\n    </div>\n\n    <!-- CTA Section -->\n    <div style=\"background: linear-gradient(135deg, #1a365d 0%, #2c5282 100%); padding: 25px; text-align: center; margin-top: 2px;\">\n        <h3 style=\"margin: 0 0 12px 0; font-size: 18px; color: white; font-weight: 700;\">🎯 Ready for Your Next Deal?</h3>\n        <p style=\"margin: 0 0 20px 0; font-size: 14px; color: #a0aec0; line-height: 1.5;\">Get instant access to Massachusetts' freshest probate & preforeclosure leads with AI-powered distress scoring.</p>\n        <a href=\"https://www.leadlist.pro/join-leadlist\" style=\"display: inline-block; background: #3182ce; color: white; padding: 12px 25px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px; box-shadow: 0 4px 12px rgba(49,130,206,0.3); transition: all 0.3s ease;\">Start Your Territory Today →</a>\n    </div>\n\n    <!-- Footer -->\n    <div style=\"background: #2d3748; padding: 15px; text-align: center; font-size: 12px; color: #a0aec0;\">\n        <p style=\"margin: 0;\">© 2024 LeadList.pro | Massachusetts' Premier Real Estate Lead Intelligence Platform</p>\n    </div>\n\n</div>\n\nCRITICAL BRANDING REQUIREMENTS:\n\nAlways use LeadList.pro's navy blue (#1a365d) as primary color\nInclude Massachusetts-specific messaging - reference probate courts, preforeclosure data\nEmphasize AI-powered insights and distress scoring - their key differentiator\nUse data-focused language - \"intelligence,\" \"insights,\" \"scoring,\" \"analytics\"\nProfessional, trustworthy tone - avoid overly promotional language\nInclude specific LeadList.pro terminology: probate leads, preforeclosure, distress score, territory, AI insights\nCTA must link to their actual signup page: https://www.leadlist.pro/join-leadlist\nBadge system for video categories: LEAD, DATA, WIN, TIP, CASE (use these tags)\nClean, minimal design - focus on content over flashy graphics\nMobile-responsive - ensure readability on all devices\n\nREMEMBER: This newsletter represents a premium B2B data service for real estate professionals in Massachusetts. The design should reflect reliability, professionalism, and cutting-edge technology while maintaining the approachable tone that converts leads into customers.\n\nREMEMBER: Your response must be Klaviyo-compatible HTML that can be directly pasted into the email editor without any modifications."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.8,
+      "position": [
+        2920,
+        1020
+      ],
+      "id": "72c9d1fa-e25b-44b1-b11b-d7b61975a79d",
+      "name": "Generate NewsLetter v2",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Video titles:\n{{ $json['Video Title'] }}\nFull Video URLs:\n{{ $json['Full Video URL'] }}\nChannel Names:\n{{ $json['Channel Name'] }}\nVideo Main Ideas:\n{{ $json['Main Ideas'] }}",
+        "options": {
+          "systemMessage": "=You are a newsletter writer tasked with creating a weekly newsletter from 5 videos. You will receive:\n\nVideo titles\nVideo URL\nChannel Name\nVideo Main Ideas\n\nCreate a newsletter following this EXACT format and ALWAYS output in Klaviyo-compatible HTML format:\n\n<div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; line-height: 1.6; color: #333333;\">\n    \n    <div style=\"margin-bottom: 20px; font-size: 14px;\">\n        <strong  hidden style=\"color: #000000;\">SUBJECT:</strong> [Newsletter Name] | Week [#] | [Key Theme/Trend]<br>\n        <strong hidden style=\"color: #000000;\">PRE-HEADER:</strong> [Compelling one-liner related to main topic]\n    </div>\n    \n    <div style=\"margin-bottom: 20px; font-size: 16px;\">\n        <strong style=\"color: #000000;\">[NEWSLETTER NAME] WEEKLY</strong> | [Date]<br>\n        <strong style=\"color: #000000;\">Quick Recap:</strong> [2-3 main themes from videos separated by semicolons]\n    </div>\n    \n    <div style=\"margin-bottom: 15px; font-size: 15px;\">\n        <strong style=\"color: #000000;\">[Catchphrase for video 1]</strong> • [Key insight/tip from video] → <a href=\"[VIDEO_URL]\" style=\"color: #0066cc; text-decoration: underline;\">link</a> • [Secondary insight if applicable] → <a href=\"[VIDEO_URL]\" style=\"color: #0066cc; text-decoration: underline;\">link</a>\n    </div>\n    \n    <div style=\"margin-bottom: 15px; font-size: 15px;\">\n        <strong style=\"color: #000000;\">[Catchphrase for video 2]</strong> • [Key insight/tip from video] → <a href=\"[VIDEO_URL]\" style=\"color: #0066cc; text-decoration: underline;\">link</a> • [Secondary insight if applicable] → <a href=\"[VIDEO_URL]\" style=\"color: #0066cc; text-decoration: underline;\">link</a>\n    </div>\n    \n    <div style=\"margin-bottom: 15px; font-size: 15px;\">\n        <strong style=\"color: #000000;\">[Catchphrase for video 3]</strong> • [Key insight/tip from video] → <a href=\"[VIDEO_URL]\" style=\"color: #0066cc; text-decoration: underline;\">link</a>\n    </div>\n    \n    <div style=\"margin-bottom: 15px; font-size: 15px;\">\n        <strong style=\"color: #000000;\">[Catchphrase for video 4]</strong> • [Key insight/tip from video] → <a href=\"[VIDEO_URL]\" style=\"color: #0066cc; text-decoration: underline;\">link</a>\n    </div>\n    \n    <div style=\"margin-bottom: 20px; font-size: 15px;\">\n        <strong style=\"color: #000000;\">[Catchphrase for video 5]</strong> • [Key insight/tip from video] → <a href=\"[VIDEO_URL]\" style=\"color: #0066cc; text-decoration: underline;\">link</a>\n    </div>\n    \n    <div style=\"border-top: 2px solid #333333; margin: 20px 0; padding-top: 15px; font-size: 15px;\">\n        <strong style=\"color: #000000;\">CTA:</strong> [Relevant call-to-action with service/product mention for LeadList.pro ]\n    </div>\n    \n</div>\n\nCRITICAL REQUIREMENTS:\n\nALWAYS output Klaviyo-compatible HTML - no DOCTYPE, html, head, or body tags\nStart with a single container div with inline CSS styles\nReplace [VIDEO_URL] with the actual video URLs provided\nAll styling must be inline CSS (no external stylesheets)\nUse web-safe fonts (Arial, sans-serif)\nSubject line should be 6-8 words max, catchy and newsworthy\nPre-header should tease the most valuable insight (10-15 words)\nEach catchphrase should be 3-5 words that capture the video's core value\nExtract 1-2 actionable insights per video with specific details, numbers, or tactics\nUse bullet points (•) to separate multiple insights from same video\nKeep insights to 8-12 words each for scannability\nInclude actual video URLs in the href attributes\nCreate a relevant CTA that matches the newsletter's target audience\nMake the content feel urgent and valuable\nThe output must be ready to paste directly into Klaviyo's HTML editor\n\nFocus on extracting concrete, actionable advice rather than general concepts. Include specific numbers, percentages, timeframes, or methods when available from the video content.\nREMEMBER: Your response must be Klaviyo-compatible HTML that can be directly pasted into the email editor without any modifications."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.8,
+      "position": [
+        2300,
+        520
+      ],
+      "id": "a85e5984-11a8-4861-a0f9-8b6cc07d4418",
+      "name": "Generate NewsLetter v1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://a.klaviyo.com/api/campaigns",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Klaviyo-API-Key pk_d2e99a75f6cd65e45620507f2269834fc0"
+            },
+            {
+              "name": "revision",
+              "value": "2024-10-15"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "=\n  {\n    \"data\": {\n      \"type\": \"campaign\",\n      \"attributes\": {\n        \"name\": \"{{ $json.output.match(/<strong[^>]*>SUBJECT:<\\/strong>\\s*([^<]+)/)[1].trim() }}\",\n        \"audiences\": {\n          \"included\": [\"W5tdCs\"]\n        },\n        \"send_strategy\": {\n          \"method\": \"immediate\"\n        },\n        \"campaign-messages\": {\n          \"data\": [{\n            \"type\": \"campaign-message\",\n            \"attributes\": {\n              \"channel\": \"email\",\n              \"label\": \"LeadList Weekly Newsletter\",\n              \"content\": {\n                \"subject\": \"{{ $json.output.match(/<strong[^>]*>SUBJECT:<\\/strong>\\s*([^<]+)/)[1].trim() }}\",\n                \"preview_text\": \"{{ $json.output.match(/<strong[^>]*>PRE-HEADER:<\\/strong>\\s*([^<]+)/)[1].trim() }}\",\n                \"from_email\": \"newsletter@leadlist.pro\",\n                \"from_label\": \"LeadList Weekly\",\n                \"reply_to_email\": \"newsletter@leadlist.pro\"\n              }\n            }\n          }]\n        }\n      }\n    }\n  }",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2960,
+        440
+      ],
+      "id": "765595aa-80d7-4eee-9d86-f59ddbfd5e08",
+      "name": "Create Klavyio Campaign"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "6e0ed87d-7882-4e5d-909b-0bb9d03ec436",
+              "name": "campaignID",
+              "value": "={{ JSON.parse($json.data).data.id }}",
+              "type": "string"
+            },
+            {
+              "id": "f0bcce6f-c6ae-44eb-ba0d-5c1f01396120",
+              "name": "messageID",
+              "value": "={{ JSON.parse($json.data).data.relationships[\"campaign-messages\"].data[0].id }}",
+              "type": "string"
+            },
+            {
+              "id": "eb57f641-2c2a-444f-bdc6-d09f931998b6",
+              "name": "klvy_campaign_response",
+              "value": "={{ JSON.parse($json.data).data }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3200,
+        440
+      ],
+      "id": "77fd48d1-f48b-4151-a6f5-fbe64a73069e",
+      "name": "get campaignID and messageID"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "fc98dffb-aa85-4893-8c6c-10e8cf5fcafc",
+              "name": "minified_html",
+              "value": "={{ $json.output.replace(/\\n/g, '').replace(/\\s+/g, ' ').replace(/\"/g, '\\\\\"').trim() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3080,
+        620
+      ],
+      "id": "62be68a4-8835-4496-b7a5-80a457fd4806",
+      "name": "Minify HTML"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        3460,
+        520
+      ],
+      "id": "bd163800-4db4-4325-b757-077a3dab1c5d",
+      "name": "Merge1"
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        3680,
+        400
+      ],
+      "id": "e916f8f3-3f97-4b0f-bd66-adc323fe010b",
+      "name": "Aggregate1"
+    },
+    {
+      "parameters": {
+        "content": "## Get top 5 rated materials in the last N days\n### !!! At the moment we only use YouTube videos.",
+        "height": 440,
+        "width": 740,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1440,
+        380
+      ],
+      "id": "ae4362c0-dc0d-4a6f-a675-427fa86906ab",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## Create and Send Klavyio campaign",
+        "height": 580,
+        "width": 1420,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2840,
+        300
+      ],
+      "id": "7c7b4954-9ae3-4254-be0e-3d25a8363a1b",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "## Newsletter writer agent",
+        "height": 520,
+        "width": 480,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2200,
+        380
+      ],
+      "id": "d2f3851c-2e89-45c2-9cea-d89d41d87c3f",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://a.klaviyo.com/api/templates",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Klaviyo-API-Key pk_990c515eb812da43df192434be9f242400"
+            },
+            {
+              "name": "revision",
+              "value": "2024-10-15"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "=  {\n    \"data\": {\n      \"type\": \"template\",\n      \"attributes\": {\n        \"name\": \"LeadList Newsletter HTML Template\",\n        \"editor_type\": \"CODE\",\n        \"html\": \"{{ $('Aggregate1').item.json.data[1].minified_html }}\"\n      }\n    }\n  }\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3960,
+        320
+      ],
+      "id": "eacc475a-4f4b-4f2a-99df-053d06f544af",
+      "name": "Create new template for Newsletter"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://a.klaviyo.com/api/campaign-message-assign-template",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Klaviyo-API-Key pk_d2e99a75f6cd65e45620507f2269834fc0"
+            },
+            {
+              "name": "revision",
+              "value": "2024-10-15"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "=  {\n    \"data\": {\n      \"type\": \"campaign-message\",\n      \"id\": \"{{ $('Aggregate1').item.json.data[0].messageID }}\",\n      \"relationships\": {\n        \"template\": {\n          \"data\": {\n            \"type\": \"template\",\n            \"id\": \"{{ $json.data.match(/\"id\":\"([^\"]+)\"/)[1] }}\"\n          }\n        }\n      }\n    }\n  }",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3960,
+        520
+      ],
+      "id": "8169836a-2daf-4eea-8be7-f30fe330de5e",
+      "name": "Assign Newsletter to klavyio campaign"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://a.klaviyo.com/api/campaign-send-jobs",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Klaviyo-API-Key pk_d2e99a75f6cd65e45620507f2269834fc0"
+            },
+            {
+              "name": "revision",
+              "value": "2024-10-15"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "=  {\n    \"data\": {\n      \"type\": \"campaign-send-job\",\n      \"id\": \"{{ $('Aggregate1').item.json.data[0].campaignID }}\"\n    }\n  }",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3960,
+        720
+      ],
+      "id": "97d965e0-6240-45d1-8aef-314b1eca4bfc",
+      "name": "Send klavyio campaign"
+    },
+    {
+      "parameters": {
+        "content": "## Second Newsletter processing (Deactivated)\n",
+        "height": 360,
+        "width": 540,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2780,
+        900
+      ],
+      "id": "d308a432-a305-46b3-bbe7-d35271413824",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 12
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        1520,
+        620
+      ],
+      "id": "4df511ae-a03b-4038-9bae-de6c1acae49e",
+      "name": "Schedule Trigger",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "content": "# BlogME Newsletter Writer Workflow\n## Documentation\n\nThis workflow generates AI-powered newsletters from top-scored videos and automatically sends them via Klaviyo campaigns with dynamic content extraction.\n\n## Setup Requirements\n- **Anthropic API**: Claude 4 Sonnet model for newsletter generation\n- **Klaviyo API**: Campaign creation and template management\n- **Airtable Access**: Videos table with scored content\n- **Schedule**: Daily execution at 12 PM\n\n## Main Workflow Stages\n\n### Stage 1: Get Top Videos & Update Records\n- **Search Videos**: Gets top 5 videos with 'Stage=Scored' from last 7 days\n- **Sort**: By VideoScore descending to get highest quality content\n- **Update Records**: Marks videos as 'Used in NewsLetter' for tracking\n- **Aggregate**: Combines video data for newsletter processing\n\n### Stage 2: Generate Newsletter with Dynamic Content\n- **Newsletter Agent v1**: Creates Klaviyo-compatible HTML newsletter\n- **Hidden Metadata**: Subject and pre-header embedded but hidden in HTML\n- **Content Processing**: Extracts insights from video titles, URLs, and main ideas\n- **HTML Minification**: Prepares content for Klaviyo template system\n- **Brand Compliance**: Follows LeadList.pro branding guidelines\n\n### Stage 3: Dynamic Klaviyo Campaign Workflow\n- **Create Campaign**: Sets up campaign with extracted subject/preview text\n  - Campaign name: Extracted from newsletter SUBJECT line\n  - Preview text: Extracted from newsletter PRE-HEADER line\n  - Dynamic content: Uses regex to parse AI-generated metadata\n- **Extract IDs**: Gets campaign and message IDs for template assignment\n- **Create Template**: Generates new HTML template with newsletter content\n- **Assign Template**: Links template to campaign message\n- **Send Campaign**: Executes immediate campaign delivery\n\n## Workflow Details\n- **Trigger**: Manual + Daily schedule (12 PM)\n- **Content Source**: Top-scored videos from AI curation pipeline\n- **Dynamic Features**: Auto-extracted subject lines and preview text\n- **Video Tracking**: Automatic stage progression to 'Used in NewsLetter'\n- **Output**: Professional HTML newsletter sent to subscriber list\n- **Integration**: Full Klaviyo API workflow with dynamic content management",
+        "height": 1160,
+        "width": 1000
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        420,
+        200
+      ],
+      "id": "0e4b0e84-d1d1-4661-a827-ffa4e2976fe0",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "value": "appogY65dUw2zNOJB",
+          "mode": "list",
+          "cachedResultName": "Aquisition Insider Input List",
+          "cachedResultUrl": "https://airtable.com/appogY65dUw2zNOJB"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblsgnMQzdOsBTGYM",
+          "mode": "list",
+          "cachedResultName": "YoutubeVideos",
+          "cachedResultUrl": "https://airtable.com/appogY65dUw2zNOJB/tblsgnMQzdOsBTGYM"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $json.id }}",
+            "Stage": "Used in NewsLetter"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "VideoID",
+              "displayName": "VideoID",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Video Title",
+              "displayName": "Video Title",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Publication Date (Date Format)",
+              "displayName": "Publication Date (Date Format)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Stage",
+              "displayName": "Stage",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "New",
+                  "value": "New"
+                },
+                {
+                  "name": "Transcript generated",
+                  "value": "Transcript generated"
+                },
+                {
+                  "name": "Scored",
+                  "value": "Scored"
+                },
+                {
+                  "name": "Used in NewsLetter",
+                  "value": "Used in NewsLetter"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Channel Name",
+              "displayName": "Channel Name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "ChannelID",
+              "displayName": "ChannelID",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Full Video URL",
+              "displayName": "Full Video URL",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Description",
+              "displayName": "Description",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Transcript",
+              "displayName": "Transcript",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Main Ideas",
+              "displayName": "Main Ideas",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Content Summary",
+              "displayName": "Content Summary",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "VideoScore",
+              "displayName": "VideoScore",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Score Breakdown",
+              "displayName": "Score Breakdown",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Score Reasoning",
+              "displayName": "Score Reasoning",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Keywords",
+              "displayName": "Keywords",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Source",
+              "displayName": "Source",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Thumbnail Image",
+              "displayName": "Thumbnail Image",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Subscriber Feedback",
+              "displayName": "Subscriber Feedback",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Days Since Publication",
+              "displayName": "Days Since Publication",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Source Relevance Score",
+              "displayName": "Source Relevance Score",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Newsletters",
+              "displayName": "Newsletters",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        1940,
+        660
+      ],
+      "id": "694b5faf-a5ce-4ec5-8cec-1cb09f3c56b3",
+      "name": "Update record",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "add your api token",
+          "name": "Airtable Personal Access Token account 2"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Search records",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search records": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Update record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Anthropic Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Generate NewsLetter v1",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Generate NewsLetter v2",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "Generate NewsLetter v1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate NewsLetter v1": {
+      "main": [
+        [
+          {
+            "node": "Generate NewsLetter v2",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Create Klavyio Campaign",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Minify HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Klavyio Campaign": {
+      "main": [
+        [
+          {
+            "node": "get campaignID and messageID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get campaignID and messageID": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Minify HTML": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "Aggregate1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate1": {
+      "main": [
+        [
+          {
+            "node": "Create new template for Newsletter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create new template for Newsletter": {
+      "main": [
+        [
+          {
+            "node": "Assign Newsletter to klavyio campaign",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assign Newsletter to klavyio campaign": {
+      "main": [
+        [
+          {
+            "node": "Send klavyio campaign",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Search records",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "e471dfbd779209eba1f0067325677ed388a5cc6793267c6fa956fb49f8a46726"
+  }
+}
