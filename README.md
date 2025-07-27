@@ -503,6 +503,9 @@ Videos Table (Stage=Scored) → Newsletter Writer → Videos Table (Stage=Used i
 
 ## 📞 Support & Maintenance
 
+### Contact
+**help@opsme.ai**
+
 ### Regular Maintenance Tasks
 - **Weekly:** Review processing logs and error rates
 - **Monthly:** Optimize AI prompts and scoring criteria
